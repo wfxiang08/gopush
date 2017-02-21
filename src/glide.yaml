@@ -1,0 +1,15 @@
+package: .
+import:
+- package: github.com/Terry-Mao/goconf
+  version: v1.0
+- package: github.com/alecthomas/log4go
+- package: github.com/garyburd/redigo
+  version: v1.0.0
+  subpackages:
+  - redis
+- package: github.com/go-sql-driver/mysql
+  version: v1.3
+- package: github.com/samuel/go-zookeeper
+  subpackages:
+  - zk
+
