@@ -54,6 +54,10 @@ var (
 )
 
 // StartListen start accept client.
+// 两种协议:
+//     tcp
+//     websocket
+//
 func StartComet() error {
 	for _, proto := range Conf.Proto {
 		if proto == WebsocketProtoStr {

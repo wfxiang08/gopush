@@ -29,6 +29,8 @@ func main() {
 	// parse cmd-line arguments
 	flag.Parse()
 	log.Info("comet ver: \"%s\" start", ver.Version)
+
+	// 处理配置文件
 	// init config
 	if err := InitConfig(); err != nil {
 		panic(err)
@@ -36,16 +38,23 @@ func main() {
 	// set max routine
 	runtime.GOMAXPROCS(Conf.MaxProc)
 	// init log
+
+	// 初始化日志
 	log.LoadConfiguration(Conf.Log)
 	defer log.Close()
+
+
 	// start pprof
 	perf.Init(Conf.PprofBind)
+
 	// create channel
 	// if process exit, close channel
 	UserChannel = NewChannelList()
 	defer UserChannel.Close()
+
 	// start stats
 	StartStats()
+
 	// start rpc
 	if err := StartRPC(); err != nil {
 		panic(err)

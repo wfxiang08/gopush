@@ -32,8 +32,10 @@ var (
 
 // StartRPC start rpc listen.
 func StartRPC() error {
+	// 如何开启RPC服务呢?
 	c := &CometRPC{}
 	rpc.Register(c)
+
 	for _, bind := range Conf.RPCBind {
 		log.Info("start listen rpc addr: \"%s\"", bind)
 		go rpcListen(bind)
@@ -55,6 +57,8 @@ func rpcListen(bind string) {
 			log.Error("listener.Close() error(%v)", err)
 		}
 	}()
+
+	// golang版本的rpc和socket的关联
 	rpc.Accept(l)
 }
 

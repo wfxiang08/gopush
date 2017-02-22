@@ -32,6 +32,7 @@ func init() {
 	flag.StringVar(&confFile, "c", "./comet.conf", " set gopush-cluster comet config file path")
 }
 
+// 通过 goconf annoation来实现配置关联
 type Config struct {
 	// base
 	User          string   `goconf:"base:user"`
@@ -105,10 +106,14 @@ func InitConfig() error {
 		Auth:                    false,
 		MsgBufNum:               30,
 	}
+
+	// 读取配置文件，解析
 	c := goconf.New()
 	if err := c.Parse(confFile); err != nil {
 		return err
 	}
+
+	// 配置文件和对应的struct的绑定关系
 	if err := c.Unmarshal(Conf); err != nil {
 		return err
 	}

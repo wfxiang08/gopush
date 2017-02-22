@@ -64,6 +64,8 @@ type CometNodeEvent struct {
 	Event int
 }
 
+// JSON版本的消息定义
+// 给单个人发送的私有消息
 // Channel Push Private Message Args
 type CometPushPrivateArgs struct {
 	Key    string          // subscriber key
@@ -71,6 +73,7 @@ type CometPushPrivateArgs struct {
 	Expire uint            // message expire second
 }
 
+// 给多个人发送的私有消息
 // Channel Push multi Private Message Args
 type CometPushPrivatesArgs struct {
 	Keys   []string        // subscriber keys
