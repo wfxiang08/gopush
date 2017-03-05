@@ -40,6 +40,7 @@ type node struct {
 	hash uint
 }
 
+// 定义数据，排序等规则
 type tickArray []node
 
 func (p tickArray) Len() int           { return len(p) }
@@ -64,6 +65,7 @@ func NewRing(n int) (h *HashRing) {
 // s: multiplier for default number of ticks (useful when one cache node has more resources, like RAM, than another)
 func (h *HashRing) AddNode(n string, s int) {
 	tSpots := h.defaultSpots * s
+
 	hash := sha1.New()
 	for i := 1; i <= tSpots; i++ {
 		hash.Write([]byte(n + ":" + strconv.Itoa(i)))
@@ -85,12 +87,18 @@ func (h *HashRing) Bake() {
 }
 
 func (h *HashRing) Hash(s string) string {
+	// 计算s的sha1签名
 	hash := sha1.New()
 	hash.Write([]byte(s))
 	hashBytes := hash.Sum(nil)
+
 	v := uint(hashBytes[19]) | uint(hashBytes[18])<<8 | uint(hashBytes[17])<<16 | uint(hashBytes[16])<<24
+
+	// 找到第一个比v大的hash ticks
+	// 一致性hash
 	i := sort.Search(h.length, func(i int) bool { return h.ticks[i].hash >= v })
 
+	// 如果没有找到，则默认为0
 	if i == h.length {
 		i = 0
 	}

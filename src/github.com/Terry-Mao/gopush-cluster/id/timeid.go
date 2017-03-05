@@ -48,6 +48,8 @@ func (t *TimeID) ID() int64 {
 }
 */
 
+// 可以考虑增加node_id, 例如:
+// __node_id__ __time_id__
 // Get get a time id.
 func Get() int64 {
 	return time.Now().UnixNano() / 100

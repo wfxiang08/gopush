@@ -25,6 +25,7 @@ import (
 
 // InitSignal register signals handler.
 func InitSignal() chan os.Signal {
+	// 注册信号
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP)
 	return c
@@ -32,6 +33,7 @@ func InitSignal() chan os.Signal {
 
 // HandleSignal fetch signal from chan then do exit or reload.
 func HandleSignal(c chan os.Signal) {
+	// 等待信号
 	// Block until a signal is received.
 	for {
 		s := <-c

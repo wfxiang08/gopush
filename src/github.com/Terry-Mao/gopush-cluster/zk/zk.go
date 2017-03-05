@@ -33,7 +33,7 @@ import (
 
 var (
 	// error
-	ErrNoChild      = errors.New("zk: children is nil")
+	ErrNoChild = errors.New("zk: children is nil")
 	ErrNodeNotExist = errors.New("zk: node not exist")
 )
 
@@ -75,18 +75,25 @@ func Create(conn *zk.Conn, fpath string) error {
 }
 
 // RegisterTmp create a ephemeral node, and watch it, if node droped then send a SIGQUIT to self.
+// 如果网络断开，则自杀? 然后如何运维保障呢?
+//
 func RegisterTemp(conn *zk.Conn, fpath string, data []byte) error {
-	tpath, err := conn.Create(path.Join(fpath)+"/", data, zk.FlagEphemeral|zk.FlagSequence, zk.WorldACL(zk.PermAll))
+
+	tpath, err := conn.Create(path.Join(fpath) + "/", data, zk.FlagEphemeral | zk.FlagSequence, zk.WorldACL(zk.PermAll))
+
 	if err != nil {
 		log.Error("conn.Create(\"%s\", \"%s\", zk.FlagEphemeral|zk.FlagSequence) error(%v)", fpath, string(data), err)
 		return err
 	}
 	log.Debug("create a zookeeper node:%s", tpath)
+
 	// watch self
 	go func() {
 		for {
 			log.Info("zk path: \"%s\" set a watch", tpath)
 			exist, _, watch, err := conn.ExistsW(tpath)
+
+			// 如果不存在，或者出现错误，则自杀
 			if err != nil {
 				log.Error("zk.ExistsW(\"%s\") error(%v)", tpath, err)
 				log.Warn("zk path: \"%s\" set watch failed, kill itself", tpath)

@@ -235,6 +235,7 @@ func handleMessageNodeEvent(conn *zk.Conn, retry, ping time.Duration, ch chan *M
 func InitMessage(conn *zk.Conn, fpath string, retry, ping time.Duration) {
 	// watch message path
 	ch := make(chan *MessageNodeEvent, 1024)
+
 	go handleMessageNodeEvent(conn, retry, ping, ch)
 	go watchMessageRoot(conn, fpath, ch)
 }

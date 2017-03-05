@@ -25,6 +25,19 @@ import (
 	"runtime"
 )
 
+
+/**
+  Message系统的结构:
+  main.go 整体集成
+  config.go 配置文件定义
+  rpc.go 对外接口的定义
+  signal.go 似乎每个模块都有重复定义
+  zk.go 也是重复定义，只不过引用了本package内部的模块
+  storage.go 做一个storage的工厂，定义了接口和FactoryMethod
+   redis.go
+   mysql.go 实现了具体的storage
+ */
+
 func main() {
 	flag.Parse()
 	log.Info("message ver: \"%s\" start", ver.Version)
@@ -41,14 +54,19 @@ func main() {
 	// 性能pref
 	perf.Init(Conf.PprofBind)
 
+
 	// Initialize redis
+	// 本地额存储
 	if err := InitStorage(); err != nil {
 		panic(err)
 	}
+
 	// init rpc service
+	// 初始化RPC服务器，对外的API
 	if err := InitRPC(); err != nil {
 		panic(err)
 	}
+
 	// init zookeeper
 	zk, err := InitZK()
 	if err != nil {

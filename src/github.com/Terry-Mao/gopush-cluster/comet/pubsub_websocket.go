@@ -62,7 +62,11 @@ func StartWebsocket() error {
 
 func websocketListen(bind string) {
 	httpServeMux := http.NewServeMux()
+
+	// 这里的handle是websocket
 	httpServeMux.Handle("/sub", websocket.Handler(SubscribeHandle))
+
+	// 创建具有 Keepalive功能的Server
 	if Conf.TCPKeepalive {
 		server := &http.Server{Handler: httpServeMux}
 		l, err := net.Listen("tcp", bind)
@@ -82,10 +86,19 @@ func websocketListen(bind string) {
 	}
 }
 
+//
+// 工作流程:
+//    用户请求 --> Connection -->  SubscribeHandle 内部的Hearbeat循环
+//                            |
+//                            |------> conn.go#HandleWrite 实现将消息写回给客户端
+//
 // Subscriber Handle is the websocket handle for sub request.
 func SubscribeHandle(ws *websocket.Conn) {
+
 	addr := ws.Request().RemoteAddr
 	params := ws.Request().URL.Query()
+
+	// 这个key是哪来的?
 	// get subscriber key
 	key := params.Get("key")
 	if key == "" {
@@ -93,6 +106,8 @@ func SubscribeHandle(ws *websocket.Conn) {
 		log.Warn("<%s> key param error", addr)
 		return
 	}
+
+	// 获取心跳间隔
 	// get heartbeat second
 	heartbeatStr := params.Get("heartbeat")
 	i, err := strconv.Atoi(heartbeatStr)
@@ -107,9 +122,11 @@ func SubscribeHandle(ws *websocket.Conn) {
 		return
 	}
 	heartbeat := i + delayHeartbeatSec
+
 	token := params.Get("token")
 	version := params.Get("ver")
 	log.Info("<%s> subscribe to key = %s, heartbeat = %d, token = %s, version = %s", addr, key, heartbeat, token, version)
+
 	// fetch subscriber from the channel
 	c, err := UserChannel.Get(key, true)
 	if err != nil {
@@ -133,6 +150,8 @@ func SubscribeHandle(ws *websocket.Conn) {
 		log.Error("<%s> user_key:\"%s\" add conn error(%v)", addr, key, err)
 		return
 	}
+
+	// 通过websocket建立长连接，websocket再通过path进行分流
 	// blocking wait client heartbeat
 	reply := ""
 	begin := time.Now().UnixNano()

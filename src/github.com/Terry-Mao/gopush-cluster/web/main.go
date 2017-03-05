@@ -24,7 +24,9 @@ import (
 	"github.com/Terry-Mao/gopush-cluster/ver"
 	"runtime"
 )
+/**
 
+ */
 func main() {
 	var err error
 	// Parse cmd-line arguments

@@ -42,6 +42,10 @@ func InitZK() (*zk.Conn, error) {
 		log.Error("myzk.Connect() error(%v)", err)
 		return nil, err
 	}
+
+	//
+	// fpath:  /gopush-cluster-comet/node1
+	//
 	fpath := path.Join(Conf.ZookeeperCometPath, Conf.ZookeeperCometNode)
 	if err = myzk.Create(conn, fpath); err != nil {
 		log.Error("myzk.Create(conn,\"%s\",\"\") error(%v)", fpath, err)
@@ -59,10 +63,13 @@ func InitZK() (*zk.Conn, error) {
 		return conn, err
 	}
 	log.Debug("myzk node:\"%s\" registe data: \"%s\"", fpath, string(data))
+
+	// 如果不存在，或者出现错误，则自杀
 	if err = myzk.RegisterTemp(conn, fpath, data); err != nil {
 		log.Error("myzk.RegisterTemp() error(%v)", err)
 		return conn, err
 	}
+
 	// watch and update
 	rpc.InitMessage(conn, Conf.ZookeeperMessagePath, Conf.RPCRetry, Conf.RPCPing)
 	return conn, nil

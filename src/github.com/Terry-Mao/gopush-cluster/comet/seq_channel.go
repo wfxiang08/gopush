@@ -32,10 +32,14 @@ var (
 	ErrAssectionConn = errors.New("Assection type Connection failed")
 )
 
+//
+// SeqChannel 到底是什么样的逻辑呢? 似乎可以处理多个connections
+//
 // Sequence Channel struct.
 type SeqChannel struct {
 	// Mutex
 	mutex *sync.Mutex
+
 	// client conn double linked-list
 	conn *hlist.Hlist
 	// Remove time id or lazy New
@@ -52,6 +56,8 @@ func NewSeqChannel() *SeqChannel {
 		//timeID: id.NewTimeID(),
 		token: nil,
 	}
+
+	// 是否支持Auth? 如果支持，则开启Token
 	// save memory
 	if Conf.Auth {
 		ch.token = NewToken()
@@ -97,11 +103,15 @@ func (c *SeqChannel) WriteMsg(key string, m *myrpc.Message) (err error) {
 	return
 }
 
+//
+// 将消息写入connections
+//
 // writeMsg write msg to conn.
 func (c *SeqChannel) writeMsg(key string, m *myrpc.Message) (err error) {
 	var (
 		oldMsg, msg, sendMsg []byte
 	)
+
 	// push message
 	for e := c.conn.Front(); e != nil; e = e.Next() {
 		conn, _ := e.Value.(*Connection)
@@ -114,6 +124,7 @@ func (c *SeqChannel) writeMsg(key string, m *myrpc.Message) (err error) {
 			}
 			sendMsg = oldMsg
 		} else {
+			// 现在只考虑新版本的协议
 			if msg == nil {
 				if msg, err = m.Bytes(); err != nil {
 					return
@@ -133,11 +144,14 @@ func (c *SeqChannel) PushMsg(key string, m *myrpc.Message, expire uint) (err err
 	if client == nil {
 		return ErrMessageRPC
 	}
+
 	c.mutex.Lock()
 	// private message need persistence
 	// if message expired no need persistence, only send online message
 	// rewrite message id
 	//m.MsgId = c.timeID.ID()
+
+	// 消息的persistence
 	m.MsgId = id.Get()
 	if m.GroupId != myrpc.PublicGroupId && expire > 0 {
 		args := &myrpc.MessageSavePrivateArgs{Key: key, Msg: m.Msg, MsgId: m.MsgId, Expire: expire}
@@ -166,17 +180,25 @@ func (c *SeqChannel) AddConn(key string, conn *Connection) (*hlist.Element, erro
 		log.Error("user_key:\"%s\" exceed conn", key)
 		return nil, ErrMaxConn
 	}
+
+	// 新添加一个connection, 然后告知client开始发送心跳
 	// send first heartbeat to tell client service is ready for accept heartbeat
 	if _, err := conn.Conn.Write(HeartbeatReply); err != nil {
 		c.mutex.Unlock()
 		log.Error("user_key:\"%s\" write first heartbeat to client error(%v)", key, err)
 		return nil, err
 	}
+
+
 	// add conn
 	conn.Buf = make(chan []byte, Conf.MsgBufNum)
+
+	// 启动对Key(用户)的处理
 	conn.HandleWrite(key)
+
 	e := c.conn.PushFront(conn)
 	c.mutex.Unlock()
+
 	ConnStat.IncrAdd()
 	log.Info("user_key:\"%s\" add conn = %d", key, c.conn.Len())
 	return e, nil

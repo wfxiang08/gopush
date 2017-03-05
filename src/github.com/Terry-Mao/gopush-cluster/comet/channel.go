@@ -28,30 +28,38 @@ import (
 
 var (
 	ErrChannelNotExist = errors.New("Channle not exist")
-	ErrConnProto       = errors.New("Unknown connection protocol")
-	ErrChannelKey      = errors.New("Key not belong this comet")
+	ErrConnProto = errors.New("Unknown connection protocol")
+	ErrChannelKey = errors.New("Key not belong this comet")
 	UserChannel        *ChannelList
 	CometRing          *ketama.HashRing
-	nodeWeightMap      = map[string]int{}
+	nodeWeightMap = map[string]int{}
 )
 
+// 定义interface
 // The subscriber interface.
+
 type Channel interface {
 	// WriteMsg push a message to the subscriber.
 	WriteMsg(key string, m *myrpc.Message) error
+
 	// PushMsg push a message to the subscriber.
 	PushMsg(key string, m *myrpc.Message, expire uint) error
+
 	// Add a token for one subscriber
 	// The request token not equal the subscriber token will return errors.
 	AddToken(key, token string) error
+
 	// Auth auth the access token.
 	// The request token not match the subscriber token will return errors.
 	AuthToken(key, token string) bool
+
 	// AddConn add a connection for the subscriber.
 	// Exceed the max number of subscribers per key will return errors.
 	AddConn(key string, conn *Connection) (*hlist.Element, error)
+
 	// RemoveConn remove a connection for the  subscriber.
 	RemoveConn(key string, e *hlist.Element) error
+
 	// Expire expire the channle and clean data.
 	Close() error
 }
@@ -63,6 +71,7 @@ type ChannelBucket struct {
 }
 
 // Channel list.
+// 首先分bucket, 然后每个bucket内部单独管理，减少mutex的相互影响
 type ChannelList struct {
 	Channels []*ChannelBucket
 }
@@ -105,8 +114,9 @@ func (l *ChannelList) Count() int {
 func (l *ChannelList) Bucket(key string) *ChannelBucket {
 	h := hash.NewMurmur3C()
 	h.Write([]byte(key))
-	idx := uint(h.Sum32()) & uint(Conf.ChannelBucket-1)
+	idx := uint(h.Sum32()) & uint(Conf.ChannelBucket - 1)
 	log.Debug("user_key:\"%s\" hit channel bucket index:%d", key, idx)
+
 	return l.Channels[idx]
 }
 
@@ -116,6 +126,8 @@ func (l *ChannelList) validate(key string) error {
 		log.Debug("no node found")
 		return ErrChannelKey
 	}
+
+	// key应该在哪个node, 如果不匹配，则报错
 	node := CometRing.Hash(key)
 	log.Debug("match node:%s hash node:%s", Conf.ZookeeperCometNode, node)
 	if Conf.ZookeeperCometNode != node {
@@ -127,10 +139,12 @@ func (l *ChannelList) validate(key string) error {
 
 // New create a user channle.
 func (l *ChannelList) New(key string) (Channel, *ChannelBucket, error) {
+	// 验证key的有效性， 每一个comet只处理部分的请求
 	// validate
 	if err := l.validate(key); err != nil {
 		return nil, nil, err
 	}
+
 	// get a channel bucket
 	b := l.Bucket(key)
 	b.Lock()
@@ -140,8 +154,11 @@ func (l *ChannelList) New(key string) (Channel, *ChannelBucket, error) {
 		log.Info("user_key:\"%s\" refresh channel bucket expire time", key)
 		return c, b, nil
 	} else {
+
+		// 创建新的Channel
 		c = NewSeqChannel()
 		b.Data[key] = c
+
 		b.Unlock()
 		ChStat.IncrCreate()
 		log.Info("user_key:\"%s\" create a new channel", key)
@@ -149,6 +166,9 @@ func (l *ChannelList) New(key string) (Channel, *ChannelBucket, error) {
 	}
 }
 
+//
+// User Channel的意义
+//
 // Get a user channel from ChannleList.
 func (l *ChannelList) Get(key string, newOne bool) (Channel, error) {
 	// validate

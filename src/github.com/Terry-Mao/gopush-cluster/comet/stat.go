@@ -38,6 +38,9 @@ var (
 	ConnStat = &ConnectionStat{}
 )
 
+//
+// 如何统计数据呢?
+//
 // Channel stat info
 type ChannelStat struct {
 	Access uint64 // total access count

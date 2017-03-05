@@ -34,6 +34,10 @@ const (
 
 // Init create pid file, set working dir, setgid and setuid.
 func Init(userGroup, dir, pidFile string) error {
+	// 修改当前dir
+	// 记录pid
+	// 这个运维工作也可以交给systemctl
+	//
 	// change working dir
 	if err := os.Chdir(dir); err != nil {
 		return err

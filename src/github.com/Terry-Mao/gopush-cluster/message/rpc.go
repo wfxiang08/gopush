@@ -23,6 +23,17 @@ import (
 	"net/rpc"
 )
 
+//
+// Message模块的RPC接口
+// 1. RPC服务的启动，停止
+// 2. 接口定义, 采用golang自己的接口定义方式
+//  实现接口如下:
+//      SavePrivate
+//      SavePrivates
+//      GetPrivate
+//      DelPrivate
+//      Ping
+//
 // RPC For receive offline messages
 type MessageRPC struct {
 }
@@ -52,6 +63,7 @@ func rpcListen(bind string) {
 	}()
 	rpc.Accept(l)
 }
+
 
 // SavePrivate rpc interface save user private message.
 func (r *MessageRPC) SavePrivate(m *myrpc.MessageSavePrivateArgs, ret *int) error {
@@ -108,38 +120,6 @@ func (r *MessageRPC) DelPrivate(key string, ret *int) error {
 	log.Debug("UserStorage.DelPrivate(\"%s\") ok", key)
 	return nil
 }
-
-/*
-// SavePublish rpc interface save publish message.
-func (r *MessageRPC) SavePublish(m *myrpc.MessageSaveGroupArgs, ret *int) error {
-	return nil
-}
-
-// GetPublish rpc interface get publish message.
-func (r *MessageRPC) GetPublish(m *myrpc.MessageGetGroupArgs, rw *myrpc.MessageGetResp) error {
-	return nil
-}
-
-// DelPublish rpc interface delete publish message.
-func (r *MessageRPC) DelPublish(key string, ret *int) error {
-	return nil
-}
-
-// SaveGroup rpc interface save publish message.
-func (r *MessageRPC) SaveGroup(m *myrpc.MessageSaveGroupArgs, ret *int) error {
-	return nil
-}
-
-// GetPublish rpc interface get publish message.
-func (r *MessageRPC) GetGroup(m *myrpc.MessageGetGroupArgs, rw *myrpc.MessageGetResp) error {
-	return nil
-}
-
-// DelPublish rpc interface delete publish message.
-func (r *MessageRPC) DelGroup(key string, ret *int) error {
-	return nil
-}
-*/
 
 // Server Ping interface
 func (r *MessageRPC) Ping(p int, ret *int) error {

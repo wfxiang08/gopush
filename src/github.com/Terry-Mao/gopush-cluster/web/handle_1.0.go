@@ -30,6 +30,9 @@ func GetServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
+
+	// 如何实现最简化的http server呢?
+	// 如何从http.Request中读取参数
 	params := r.URL.Query()
 	key := params.Get("k")
 	callback := params.Get("cb")
@@ -97,8 +100,11 @@ func GetOfflineMsg(w http.ResponseWriter, r *http.Request) {
 	key := params.Get("k")
 	midStr := params.Get("m")
 	callback := params.Get("cb")
+
 	res := map[string]interface{}{"ret": OK}
+	// 通过defer, 保证数据最终写回到Response中
 	defer retWrite(w, r, res, callback, time.Now())
+
 	if key == "" || midStr == "" {
 		res["ret"] = ParamErr
 		return

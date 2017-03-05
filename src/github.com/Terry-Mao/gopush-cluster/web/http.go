@@ -35,16 +35,22 @@ func StartHTTP() {
 	httpServeMux.HandleFunc("/1/server/get", GetServer)
 	httpServeMux.HandleFunc("/1/msg/get", GetOfflineMsg)
 	httpServeMux.HandleFunc("/1/time/get", GetTime)
-	// old
-	httpServeMux.HandleFunc("/server/get", GetServer0)
-	httpServeMux.HandleFunc("/msg/get", GetOfflineMsg0)
-	httpServeMux.HandleFunc("/time/get", GetTime0)
+
+	// 不再考虑旧版的接口
+	//// old
+	//httpServeMux.HandleFunc("/server/get", GetServer0)
+	//httpServeMux.HandleFunc("/msg/get", GetOfflineMsg0)
+	//httpServeMux.HandleFunc("/time/get", GetTime0)
 	// internal
 	httpAdminServeMux := http.NewServeMux()
+
+
+	// 可以通过内部nginx等实现权限的控制
 	// 1.0
 	httpAdminServeMux.HandleFunc("/1/admin/push/private", PushPrivate)
 	httpAdminServeMux.HandleFunc("/1/admin/push/mprivate", PushMultiPrivate)
 	httpAdminServeMux.HandleFunc("/1/admin/msg/del", DelPrivate)
+
 	// old
 	httpAdminServeMux.HandleFunc("/admin/push", PushPrivate)
 	httpAdminServeMux.HandleFunc("/admin/msg/clean", DelPrivate)
@@ -79,6 +85,8 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 		log.Error("json.Marshal(\"%v\") error(%v)", res, err)
 		return
 	}
+
+	// jsonp格式的支持
 	dataStr := ""
 	if callback == "" {
 		// Normal json

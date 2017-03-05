@@ -22,6 +22,9 @@ import (
 	"net/http/pprof"
 )
 
+//
+// 可以通过指定的端口: pprofBind 进行profile
+//
 // StartPprof start http pprof.
 func Init(pprofBind []string) {
 	pprofServeMux := http.NewServeMux()

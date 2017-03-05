@@ -59,7 +59,13 @@ func NewRedisStorage() *RedisStorage {
 	redisPool := map[string]*redis.Pool{}
 	ring := ketama.NewRing(ketamaBase)
 	reg := regexp.MustCompile("(.+)@(.+)#(.+)|(.+)@(.+)")
+
+	//node1:1 unix@/tmp/redis.sock
+	//node1:1 tcp@localhost:6379
+	//node1:1 tcp@localhost:6379
 	for n, addr := range Conf.RedisSource {
+		// 节点 权重
+		// node weight
 		nw := strings.Split(n, ":")
 		if len(nw) != 2 {
 			err := errors.New("node config error, it's nodeN:W")
@@ -71,12 +77,16 @@ func NewRedisStorage() *RedisStorage {
 			log.Error("strconv.Atoi(\"%s\") failed (%v)", nw[1], err)
 			panic(err)
 		}
+
+		// 如何解析地址
 		// get protocol and addr
 		pw := reg.FindStringSubmatch(addr)
 		if len(pw) < 6 {
 			log.Error("strings.regexp(\"%s\", \"%s\") failed (%v)", addr, pw)
 			panic(fmt.Sprintf("config redis.source node:\"%s\" format error", addr))
 		}
+
+		// 协议: tcp 或者 unix
 		tmpProto := ""
 		tmpAddr := ""
 		if pw[1] != "" {
@@ -110,7 +120,11 @@ func NewRedisStorage() *RedisStorage {
 		// add node to ketama hash
 		ring.AddNode(nw[0], w)
 	}
+
+	// 重新排序
 	ring.Bake()
+
+	// 一致性Hash如何容错？ 例如: 某个节点挂了，如何处理呢?
 	s := &RedisStorage{pool: redisPool, ring: ring, delCH: make(chan *RedisDelMessage, 10240)}
 	go s.clean()
 	return s
@@ -118,25 +132,37 @@ func NewRedisStorage() *RedisStorage {
 
 // SavePrivate implements the Storage SavePrivate method.
 func (s *RedisStorage) SavePrivate(key string, msg json.RawMessage, mid int64, expire uint) error {
+	// 消息的序列化
 	rm := &RedisPrivateMessage{Msg: msg, Expire: int64(expire) + time.Now().Unix()}
 	m, err := json.Marshal(rm)
 	if err != nil {
-		log.Error("json.Marshal() key:\"%s\" error(%v)", key, err)
+		log.Error(`json.Marshal() key:"%s" error(%v)`, key, err)
 		return err
 	}
+
+	// 获取Redis Conn
 	conn := s.getConn(key)
 	if conn == nil {
 		return RedisNoConnErr
 	}
 	defer conn.Close()
+
+	// 参考: https://redis.io/commands/zadd
+	// 将消息添加到key对应
+	// mid, m: score, member(消息作为member保存)
 	if err = conn.Send("ZADD", key, mid, m); err != nil {
 		log.Error("conn.Send(\"ZADD\", \"%s\", %d, \"%s\") error(%v)", key, mid, string(m), err)
 		return err
 	}
+
+	// 控制zset的元素个数
 	if err = conn.Send("ZREMRANGEBYRANK", key, 0, -1*(Conf.RedisMaxStore+1)); err != nil {
 		log.Error("conn.Send(\"ZREMRANGEBYRANK\", \"%s\", 0, %d) error(%v)", key, -1*(Conf.RedisMaxStore+1), err)
 		return err
 	}
+
+	// 以上两个命令一次性Flush出去，然后分两次 Receive，一定要注意
+	// 如果Receive一次，然后出错了，那这种状态该如何处理呢? 下一次Conn被复用必须不能受前一次调用的影响
 	if err = conn.Flush(); err != nil {
 		log.Error("conn.Flush() error(%v)", err)
 		return err
@@ -284,6 +310,8 @@ func (s *RedisStorage) DelPrivate(key string) error {
 		return RedisNoConnErr
 	}
 	defer conn.Close()
+
+	// 直接通过REDIS CMD来操作Redis
 	if _, err := conn.Do("DEL", key); err != nil {
 		log.Error("conn.Do(\"DEL\", \"%s\") error(%v)", key, err)
 		return err
@@ -335,6 +363,9 @@ func (s *RedisStorage) getConn(key string) redis.Conn {
 }
 
 func (s *RedisStorage) getConnByNode(node string) redis.Conn {
+	//
+	// 从pool中选出一个元素
+	//
 	p, ok := s.pool[node]
 	if !ok {
 		log.Warn("no node: \"%s\" in redis pool", node)

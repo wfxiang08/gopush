@@ -39,11 +39,15 @@ func (c *Connection) HandleWrite(key string) {
 		)
 		log.Debug("user_key: \"%s\" HandleWrite goroutine start", key)
 		for {
+			// 从Buf中监控数据
 			msg, ok := <-c.Buf
 			if !ok {
 				log.Debug("user_key: \"%s\" HandleWrite goroutine stop", key)
 				return
 			}
+
+			// 处理不同的协议
+			// websocket.Conn#Write内部有加锁机制，保证不同的Write之间不会相互冲突
 			if c.Proto == WebsocketProto {
 				// raw
 				n, err = c.Conn.Write(msg)
@@ -55,6 +59,8 @@ func (c *Connection) HandleWrite(key string) {
 				log.Error("unknown connection protocol: %d", c.Proto)
 				panic(ErrConnProto)
 			}
+
+			// 统计数据
 			// update stat
 			if err != nil {
 				log.Error("user_key: \"%s\" conn.Write() error(%v)", key, err)

@@ -32,6 +32,8 @@ var (
 	ErrTokenExpired = errors.New("token expired")
 )
 
+//
+// 通过LRUMap来记录token, 验证token的有效性
 // Token struct
 type Token struct {
 	token map[string]*list.Element // token map
@@ -62,12 +64,17 @@ func (t *Token) Add(ticket string) error {
 		log.Warn("token \"%s\" exist", ticket)
 		return ErrTokenExist
 	}
+
+	// 添加新元素之后清理
 	t.clean()
 	return nil
 }
 
 // Auth auth a token is valid
 func (t *Token) Auth(ticket string) error {
+	// 如何认证ticket?
+	// 1. ticket不存在
+	// 2. ticket
 	if e, ok := t.token[ticket]; !ok {
 		log.Warn("token \"%s\" not exist", ticket)
 		return ErrTokenNotExist
@@ -78,6 +85,8 @@ func (t *Token) Auth(ticket string) error {
 			log.Warn("token \"%s\" expired", ticket)
 			return ErrTokenExpired
 		}
+
+		// 重新修改Expire
 		td.Expire = time.Now().Add(Conf.TokenExpire)
 		t.lru.MoveToBack(e)
 	}
@@ -89,6 +98,8 @@ func (t *Token) Auth(ticket string) error {
 func (t *Token) clean() {
 	now := time.Now()
 	e := t.lru.Front()
+
+	// 从前往后遍历，删除过期的tokens
 	for {
 		if e == nil {
 			break
@@ -97,11 +108,17 @@ func (t *Token) clean() {
 		if now.After(td.Expire) {
 			log.Warn("token \"%s\" expired", td.Ticket)
 			o := e.Next()
+
+			// 从map中删除ticket
 			delete(t.token, td.Ticket)
+
+			// 从双向链表
 			t.lru.Remove(e)
 			e = o
 			continue
 		}
+
+		// 碰到没有Expire的元素，终止
 		break
 	}
 }

@@ -25,6 +25,27 @@ import (
 	"runtime"
 )
 
+/**
+    main.go 整体
+    zk.go
+    signal.go
+    stat.go 辅助
+
+    channel.go
+    seq_channel.go
+
+    rpc.go 对外接口：用于对外接受推送的消息
+
+    token.go 权限管理
+
+    pubsub.go
+    pubsub_tcp.go
+    pubsub_websocket.go 定义了sub模型以及实现方式
+        实现heartbeat的维护
+    conn.go
+        实现对Client推送业务消息的接口
+
+ */
 func main() {
 	// parse cmd-line arguments
 	flag.Parse()

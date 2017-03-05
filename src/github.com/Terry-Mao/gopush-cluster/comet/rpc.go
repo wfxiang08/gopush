@@ -32,7 +32,8 @@ var (
 
 // StartRPC start rpc listen.
 func StartRPC() error {
-	// 如何开启RPC服务呢?
+	// 1. 如何开启RPC服务呢?
+	// 将对象注入到rpc中
 	c := &CometRPC{}
 	rpc.Register(c)
 
@@ -45,6 +46,7 @@ func StartRPC() error {
 }
 
 func rpcListen(bind string) {
+	// 2. 创建 Listen, 然后和rpc关联
 	l, err := net.Listen("tcp", bind)
 	if err != nil {
 		log.Error("net.Listen(\"tcp\", \"%s\") error(%v)", bind, err)
@@ -109,6 +111,13 @@ func (c *CometRPC) PushPrivate(args *myrpc.CometPushPrivateArgs, ret *int) error
 	if args == nil || args.Key == "" {
 		return myrpc.ErrParam
 	}
+
+	//
+	// key
+	// msg
+	// Expire
+	//
+	// 用户的Channel是如何维护的呢？
 	// get a user channel
 	ch, _, err := UserChannel.New(args.Key)
 	if err != nil {

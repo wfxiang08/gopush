@@ -39,16 +39,20 @@ var (
 	ErrMaxConn = errors.New("Exceed the max subscriber connection per key")
 	// Assection type failed
 	ErrAssertType = errors.New("Subscriber assert type failed")
+
 	// Heartbeat
 	// HeartbeatLen = len(Heartbeat)
 	// hearbeat
 	HeartbeatReply = []byte("+h\r\n")
+
 	// auth failed reply
 	AuthReply = []byte("-a\r\n")
-	// channle not found reply
+	// channel not found reply
 	ChannelReply = []byte("-c\r\n")
+
 	// param error reply
 	ParamReply = []byte("-p\r\n")
+
 	// node error reply
 	NodeReply = []byte("-n\r\n")
 )
